@@ -57,7 +57,7 @@ fi
     exit 1
   fi
 
-  if [ $WORK_DONE = 1 ]; then
+  if [ $WORK_DONE -eq 1 ]; then
     printf '\n\033[0;32mAll tests are green, pushing... 🎉\033[0m\n'
   fi
 
