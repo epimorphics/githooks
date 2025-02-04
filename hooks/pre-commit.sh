@@ -59,7 +59,7 @@ elif [ "$PRE_STATUS" != "$POST_STATUS" ]; then
   git add "$RUBY_FILES" "$ESLINT_FILES" "$PRETTIER_FILES"
 fi
 
-if [ $WORK_DONE == 1 ]; then
+if [ $WORK_DONE -eq 1 ]; then
   printf '\n\033[0;32mLinting completed successfully! 🎉\033[0m\n'
 fi
 
