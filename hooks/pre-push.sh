@@ -14,7 +14,10 @@ if echo "$BRANCH_NAME" | grep -q '^(rebase)|(production)*$'; then
 fi
 
 # Check for existence of "new or modified" test files
-TEST_FILES="$(git diff --diff-filter=ACDM --name-only --cached | grep -E '(_test\.rb)$')"
+TEST_FILES="$(git diff --diff-filter=ACDM --name-only --cached | grep -E '(./test/*)$')"
+RUBY_FILES="$(git diff --diff-filter=ACDM --name-only --cached | grep -E '(_test\.rb)$')"
+JS_FILES="$(git diff --diff-filter=ACDM --name-only --cached | grep -E '(\.(js|ts|vue)$')"
+
 WORK_DONE=0
 
 if [ -z "$TEST_FILES" ]; then
@@ -24,7 +27,6 @@ if [ -z "$TEST_FILES" ]; then
     case "${RESPONSE}" in
       [Yy]* )
         printf '\n\033[0;31mContinuing without new tests... 😖\033[0m\n'
-        # exit 0;;
         break;;
       [Nn]* )
         printf '\n\033[0;32mExiting now to allow tests to be added... 🎉\033[0m\n'
@@ -33,32 +35,49 @@ if [ -z "$TEST_FILES" ]; then
 	done
 fi
 
+if [ -n "$RUBY_FILES" ]; then
+  printf '\nRunning Rails Tests...'
+  bundle exec rails test
+  RUBY_TEST_EXIT_CODE=$?
+  WORK_DONE=1
+else
+  RUBY_TEST_EXIT_CODE=0
+fi
 
-  if [ -n "$TEST_FILES" ]; then
-    printf '\nRunning Rails Tests...'
-    bundle exec rails test
-    TEST_EXIT_CODE=$?
-    WORK_DONE=1
-  else
-    TEST_EXIT_CODE=0
-  fi
+if [ -n "$RUBY_FILES" ]; then
+  printf '\nRunning System Tests...'
+  bundle exec rails test:system
+  RUBY_SYSTEM_EXIT_CODE=$?
+  WORK_DONE=1
+else
+  RUBY_SYSTEM_EXIT_CODE=0
+fi
 
-  if [ -n "$TEST_FILES" ]; then
-    printf '\nRunning System Tests...'
-    bundle exec rails test:system
-    SYSTEM_EXIT_CODE=$?
-    WORK_DONE=1
-  else
-    SYSTEM_EXIT_CODE=0
-  fi
+if [ -n "$JS_FILES" ]; then
+  printf '\nRunning Unit Tests...'
+  yarn run test:unit
+  JS_TEST_EXIT_CODE=$?
+  WORK_DONE=1
+else
+  JS_TEST_EXIT_CODE=0
+fi
 
-  if [ ! $TEST_EXIT_CODE -eq 0 ] || [ ! $SYSTEM_EXIT_CODE -eq 0 ]; then
-    printf '\n\033[0;31mCannot push, tests are failing. Use --no-verify to force push. 😖\033[0m\n'
-    exit 1
-  fi
+if [ -n "$JS_FILES" ]; then
+  printf '\nRunning End to End Tests...'
+  yarn run test:system
+  JS_SYSTEM_EXIT_CODE=$?
+  WORK_DONE=1
+else
+  JS_SYSTEM_EXIT_CODE=0
+fi
 
-  if [ $WORK_DONE -eq 1 ]; then
-    printf '\n\033[0;32mAll tests are green, pushing... 🎉\033[0m\n'
-  fi
+if [ ! $RUBY_TEST_EXIT_CODE -eq 0 ] || [ ! $RUBY_SYSTEM_EXIT_CODE -eq 0 ] || [ ! $JS_TEST_EXIT_CODE -eq 0 ] || [ ! $JS_SYSTEM_EXIT_CODE -eq 0 ]; then
+  printf '\n\033[0;31mCannot push, tests are failing. Use --no-verify to force push. 😖\033[0m\n'
+  exit 1
+fi
 
-  exit 0
+if [ $WORK_DONE = 1 ]; then
+  printf '\n\033[0;32mAll tests are green, pushing... 🎉\033[0m\n'
+fi
+
+exit 0
