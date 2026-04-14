@@ -10,6 +10,8 @@ and to [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
 
 ### Added
 
+- feat(changelog): overhaul local generation script
+  [`edf475d`](git@github.com:epimorphics/githooks/commit/edf475d)
 - feat(build): introduce Makefile for common automation tasks
   [`c826660`](git@github.com:epimorphics/githooks/commit/c826660)
 - feat(githooks): implement pre-push hook for Docker verification
