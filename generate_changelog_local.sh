@@ -216,6 +216,113 @@ prompt_and_append() {
     rm -f "$TEMP_FILE"
 }
 
+# Merges duplicate section headings inside the ## Unreleased block.
+# This keeps a single section per heading (e.g. one Added, one Changed)
+# while preserving section order from first appearance.
+normalize_unreleased_sections() {
+    TMP_OUT=$(mktemp)
+
+    awk '
+    BEGIN {
+        state = "pre"
+    }
+
+    function trim_trailing_newlines(s) {
+        sub(/\n+$/, "", s)
+        return s
+    }
+
+    function trim_leading_newlines(s) {
+        sub(/^\n+/, "", s)
+        return s
+    }
+
+    {
+        line = $0
+
+        if (state == "pre") {
+            if (line == "## Unreleased") {
+                state = "unreleased"
+                unreleased_found = 1
+            } else {
+                pre = pre line "\n"
+            }
+            next
+        }
+
+        if (state == "unreleased") {
+            if (line ~ /^## /) {
+                state = "post"
+                post = post line "\n"
+                current = ""
+                next
+            }
+
+            if (line ~ /^### /) {
+                current = substr(line, 5)
+                if (!(current in seen)) {
+                    seen[current] = 1
+                    order[++count] = current
+                }
+                next
+            }
+
+            if (current == "") {
+                unreleased_intro = unreleased_intro line "\n"
+            } else {
+                section_body[current] = section_body[current] line "\n"
+            }
+            next
+        }
+
+        if (state == "post") {
+            post = post line "\n"
+        }
+    }
+
+    END {
+        if (!unreleased_found) {
+            printf "%s%s", pre, post
+            exit
+        }
+
+        printf "%s", pre
+        printf "## Unreleased\n"
+
+        unreleased_intro = trim_trailing_newlines(unreleased_intro)
+        if (unreleased_intro != "") {
+            printf "\n%s\n", unreleased_intro
+        } else {
+            printf "\n"
+        }
+
+        for (i = 1; i <= count; i++) {
+            sec = order[i]
+            body = trim_trailing_newlines(section_body[sec])
+            body = trim_leading_newlines(body)
+
+            printf "### %s\n\n", sec
+            if (body != "") {
+                printf "%s\n", body
+            }
+
+            if (i < count) {
+                printf "\n"
+            }
+        }
+
+        post = trim_trailing_newlines(post)
+        if (post != "") {
+            printf "\n%s\n", post
+        } else {
+            printf "\n"
+        }
+    }
+    ' "$CHANGELOG_FILE" > "$TMP_OUT"
+
+    mv "$TMP_OUT" "$CHANGELOG_FILE"
+}
+
 print_completion_notes() {
     echo "Reminder: Generated changelog entries are a starting point."
     echo "Please review and edit CHANGELOG.md before committing."
