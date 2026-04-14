@@ -1,0 +1,85 @@
+#!/bin/sh
+
+list="issue spike task"
+
+listRE="^($(printf '%s\n' "$list" | tr ' ' '|'))/"
+
+BRANCH_NAME=$(git branch --show-current | grep -E "$listRE" | sed 's/* //')
+
+printf '\n\033[0;105mChecking "%s"... \033[0m\n', "$BRANCH_NAME"
+
+if echo "$BRANCH_NAME" | grep -q '^(rebase)|(production)*$'; then
+ 	printf '\n\033[0;32mNo checks necessary on "%s", pushing now... 🎉\033[0m\n', "$BRANCH_NAME"
+	exit 0
+fi
+
+# Check for existence of "new or modified" test files
+TEST_FILES="$(git diff --diff-filter=ACDM --name-only --cached | grep -E '(./test/*)$')"
+# Get all ruby test files to run tests
+RUBY_FILES="$(git ls-files | grep -i -E '(_test\.rb)$')"
+# Get all js test files to run tests
+JS_FILES="$(git ls-files | grep -i -E '(\.(js|ts|vue)$')"
+
+WORK_DONE=0
+
+if [ -z "$TEST_FILES" ]; then
+  printf 'There are no new tests created in "%s".\n', "$BRANCH_NAME"
+  while : ; do
+    read -r 'Are you sure you want to continue (y/n)? ' RESPONSE < /dev/tty
+    case "${RESPONSE}" in
+      [Yy]* )
+        printf '\n\033[0;31mContinuing without new tests... 😖\033[0m\n'
+        break;;
+      [Nn]* )
+        printf '\n\033[0;32mExiting now to allow tests to be added... 🎉\033[0m\n'
+        exit 1;;
+    esac
+  done
+fi
+
+if [ -n "$RUBY_FILES" ]; then
+  printf '\nRunning Rails Tests...'
+  bundle exec rails test
+  RUBY_TEST_EXIT_CODE=$?
+  WORK_DONE=1
+else
+  RUBY_TEST_EXIT_CODE=0
+fi
+
+if [ -n "$RUBY_FILES" ]; then
+  printf '\nRunning System Tests...'
+  bundle exec rails test:system
+  RUBY_SYSTEM_EXIT_CODE=$?
+  WORK_DONE=1
+else
+  RUBY_SYSTEM_EXIT_CODE=0
+fi
+
+if [ -n "$JS_FILES" ]; then
+  printf '\nRunning Unit Tests...'
+  yarn run test:unit
+  JS_TEST_EXIT_CODE=$?
+  WORK_DONE=1
+else
+  JS_TEST_EXIT_CODE=0
+fi
+
+if [ -n "$JS_FILES" ]; then
+  printf '\nRunning End to End Tests...'
+  yarn run test:system
+  JS_SYSTEM_EXIT_CODE=$?
+  WORK_DONE=1
+else
+  JS_SYSTEM_EXIT_CODE=0
+fi
+
+if [ ! $RUBY_TEST_EXIT_CODE -eq 0 ] || [ ! $RUBY_SYSTEM_EXIT_CODE -eq 0 ] || [ ! $JS_TEST_EXIT_CODE -eq 0 ] || [ ! $JS_SYSTEM_EXIT_CODE -eq 0 ]; then
+  printf '\n\033[0;31mCannot push, tests are failing. Use --no-verify to force push. 😖\033[0m\n'
+  exit 1
+fi
+
+if [ $WORK_DONE = 1 ]; then
+  printf '\n\033[0;32mAll tests are green, pushing... 🎉\033[0m\n'
+fi
+
+exit 0
