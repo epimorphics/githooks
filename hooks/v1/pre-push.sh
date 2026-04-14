@@ -15,14 +15,16 @@ fi
 
 # Check for existence of "new or modified" test files
 TEST_FILES="$(git diff --diff-filter=ACDM --name-only --cached | grep -E '(./test/*)$')"
-RUBY_FILES="$(git diff --diff-filter=ACDM --name-only --cached | grep -E '(_test\.rb)$')"
-JS_FILES="$(git diff --diff-filter=ACDM --name-only --cached | grep -E '(\.(js|ts|vue)$')"
+# Get all ruby test files to run tests
+RUBY_FILES="$(git ls-files | grep -i -E '(_test\.rb)$')"
+# Get all js test files to run tests
+JS_FILES="$(git ls-files | grep -i -E '(\.(js|ts|vue)$')"
 
 WORK_DONE=0
 
 if [ -z "$TEST_FILES" ]; then
   printf 'There are no new tests created in "%s".\n', "$BRANCH_NAME"
-	while : ; do
+  while : ; do
     read -r 'Are you sure you want to continue (y/n)? ' RESPONSE < /dev/tty
     case "${RESPONSE}" in
       [Yy]* )
@@ -32,7 +34,7 @@ if [ -z "$TEST_FILES" ]; then
         printf '\n\033[0;32mExiting now to allow tests to be added... 🎉\033[0m\n'
         exit 1;;
     esac
-	done
+  done
 fi
 
 if [ -n "$RUBY_FILES" ]; then
