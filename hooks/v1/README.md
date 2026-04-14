@@ -8,11 +8,14 @@
 
 ## Table of Contents
 
-- [Streamlined Installation](#streamlined-installation)
-- [Manual Installation](#manual-installation-instructions)
-- [Skip the pre-commit hook](#to-skip-the-pre-commit-hook)
-- [Skip the pre-push hook](#to-skip-the-pre-push-hook)
-- [Remove hooks from repository](#remove-the-hooks-files-from-the-repository)
+- [Adding Git Hooks](#adding-git-hooks)
+  - [Current Git Hooks](#current-git-hooks)
+  - [Table of Contents](#table-of-contents)
+  - [Streamlined installation](#streamlined-installation)
+  - [Manual Installation Instructions](#manual-installation-instructions)
+  - [To skip the pre-commit hook](#to-skip-the-pre-commit-hook)
+  - [To skip the pre-push hook](#to-skip-the-pre-push-hook)
+  - [Remove the hooks files from the repository](#remove-the-hooks-files-from-the-repository)
 
 ## Streamlined installation
 
@@ -31,7 +34,6 @@ sh makehooks
 ```
 
 5. Push your latest commit with the newly installed hooks for your repository
-
 
 ## Manual Installation Instructions
 
@@ -61,7 +63,7 @@ You will need to set the files to be executable by the shell by running the
 following command in terminal from the root of the repository:
 
 ```sh
-chmod +x .githooks/pre-commit && chmod +x .githooks/pre-push
+chmod +x .githooks/pre-commit .githooks/post-commit .githooks/pre-push
 ```
 
 3. Set the path in the repository gitconfig
