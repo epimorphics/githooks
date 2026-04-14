@@ -207,6 +207,7 @@ prompt_and_append() {
         [Yy]|[Yy][Ee][Ss])
             printf '\n' >> "$CHANGELOG_FILE"
             cat "$TEMP_FILE" >> "$CHANGELOG_FILE"
+            normalize_unreleased_sections
             echo "Entries appended to $CHANGELOG_FILE."
             ;;
         *)
