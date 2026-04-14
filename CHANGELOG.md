@@ -45,6 +45,8 @@ and to [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
   [`c5d24ef`](git@github.com:epimorphics/githooks/commit/c5d24ef)
 - ci(hooks): add pre-commit Ruby linting hook
   [`f932af9`](git@github.com:epimorphics/githooks/commit/f932af9)
+- docs(changelog): update history with recent changes
+  [`9b9347d`](git@github.com:epimorphics/githooks/commit/9b9347d)
 - docs(changelog): add initial changelog file
   [`4e0a439`](git@github.com:epimorphics/githooks/commit/4e0a439)
 - docs(githooks): add README for githooks setup and usage
